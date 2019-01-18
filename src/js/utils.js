@@ -1,9 +1,9 @@
-// @ts-check
+// TODO: refactor this frankenstein, maybe move to new version of d3
 import csvtojson from 'csvtojson';
+import d3 from 'd3';
 var duration = 300;
 var i = 0;
 
-// PRIVATE
 const visit = (parent, visitFn, childrenFn) => {
   if (!parent) return;
   visitFn(parent);
@@ -12,22 +12,32 @@ const visit = (parent, visitFn, childrenFn) => {
   var count = children.length;
   for (var i = 0; i < count; i++) visit(children[i], visitFn, childrenFn);
 };
-
-const collapse = node => {
-  debugger;
-  if (node.children) {
-    node._children = node.children;
-    node._children.forEach(collapse);
-    node.children = null;
-  }
+const getTeamsColorMap = tree => {
+  const teams = new Map();
+  visit(
+    tree,
+    node => teams.set(node['Team (team)'] || '', fromStringToColor(node['Team (team)'])),
+    node => node.children
+  );
+  return teams;
 };
-
+const collapse = node => {
+  if (!(node.children || node._children)) return;
+  node._children = node.children || node._children;
+  node.children = null;
+  node._children.forEach(collapse);
+};
 const expand = node => {
-  if (node._children) {
-    node.children = node._children;
-    node.children.forEach(expand);
-    node._children = null;
-  }
+  if (!(node.children || node._children)) return;
+  node.children = node.children || node._children;
+  node._children = null;
+  node.children.forEach(expand);
+};
+const expandParents = node => {
+  const parent = node.parent;
+  if (!parent) return;
+  parent.children = parent._children;
+  expandParents(parent);
 };
 
 function centerNode(source, zoomListener, viewerWidth, viewerHeight) {
@@ -55,15 +65,47 @@ const toggleChildren = node => {
   return node;
 };
 
-function click(node, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener) {
+function click(
+  node,
+  root,
+  tree,
+  viewerWidth,
+  viewerHeight,
+  maxLabelLength,
+  svgGroup,
+  zoomListener,
+  teamsColorMap
+) {
   if (d3.event.defaultPrevented) return;
-  node = toggleChildren(node);
-  update(node, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener);
+  if (node._children || node.children) {
+    node = toggleChildren(node);
+    update(
+      node,
+      root,
+      tree,
+      viewerWidth,
+      viewerHeight,
+      maxLabelLength,
+      svgGroup,
+      zoomListener,
+      teamsColorMap
+    );
+  }
   centerNode(node, zoomListener, viewerWidth, viewerHeight);
 }
+function update(
+  source,
+  root,
+  tree,
+  viewerWidth,
+  viewerHeight,
+  maxLabelLength,
+  svgGroup,
+  zoomListener,
+  teamsColorMap
+) {
+  const diagonal = d3.svg.diagonal().projection(d => [d.y, d.x]);
 
-function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener) {
-  const diagonal = d3.svg.diagonal().projection(d => [d.y, d.x]); // TODO: pass from parent?
   // Compute the new height, function counts total children of root node and sets tree height accordingly.
   // This prevents the layout looking squashed when new nodes are made visible or looking sparse when nodes are removed
   // This makes the layout more consistent.
@@ -79,7 +121,7 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
     }
   };
   childCount(0, root);
-  var newHeight = d3.max(levelWidth) * 25; // 25 pixels per line
+  var newHeight = d3.max(levelWidth) * 35; // 25 pixels per line
   tree = tree.size([newHeight, viewerWidth]);
 
   // Compute the new tree layout.
@@ -106,7 +148,17 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
     .attr('class', 'node')
     .attr('transform', () => 'translate(' + source.y0 + ',' + source.x0 + ')')
     .on('click', d => {
-      click(d, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener);
+      click(
+        d,
+        root,
+        tree,
+        viewerWidth,
+        viewerHeight,
+        maxLabelLength,
+        svgGroup,
+        zoomListener,
+        teamsColorMap
+      );
     });
 
   nodeEnter
@@ -114,13 +166,14 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
     .attr('class', 'nodeCircle')
     .attr('r', 0)
     .style('fill', function(d) {
-      return d._children ? 'lightsteelblue' : '#fff';
+      const color = teamsColorMap.get(d['Team (team)'] || '');
+      return color; //return d._children ? 'lightsteelblue' : '#fff';
     });
 
   nodeEnter
     .append('text')
     .attr('x', function(d) {
-      return d.children || d._children ? -10 : 10;
+      return d.children || d._children ? -20 : 20;
     })
     .attr('dy', '.35em')
     .attr('class', 'nodeText')
@@ -128,7 +181,8 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
       return d.children || d._children ? 'end' : 'start';
     })
     .text(function(d) {
-      return d.name;
+      // return d.name + d['Team (team)'];
+      return 'felice';
     })
     .style('fill-opacity', 0);
 
@@ -136,20 +190,22 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
   node
     .select('text')
     .attr('x', function(d) {
-      return d.children || d._children ? -10 : 10;
+      return d.children || d._children ? -20 : 20;
     })
     .attr('text-anchor', function(d) {
       return d.children || d._children ? 'end' : 'start';
     })
     .text(function(d) {
-      return d.name;
+      return d['Team (team)'] ? `${d.name} (${d['Team (team)']})` : d.name;
     });
 
   // Change the circle fill depending on whether it has children and is collapsed
   node
     .select('circle.nodeCircle')
-    .attr('r', 4.5)
+    .attr('r', 10)
     .style('fill', function(d) {
+      const color = teamsColorMap.get(d['Team (team)'] || '');
+      return color;
       return d._children ? 'lightsteelblue' : '#fff';
     });
 
@@ -226,13 +282,150 @@ function update(source, root, tree, viewerWidth, viewerHeight, maxLabelLength, s
     d.y0 = d.y;
   });
 }
+const getMaxLabelLength = treeData => {
+  let maxLabelLength = 0;
+  visit(
+    treeData,
+    node => (maxLabelLength = Math.max(node.name.length, maxLabelLength)),
+    node => (node.children && node.children.length > 0 ? node.children : null)
+  );
+  return maxLabelLength;
+};
+const getDrawParams = treeData => {
+  const root = treeData;
+  const teamsColorMap = getTeamsColorMap(treeData);
+  const dimensions = document.querySelector('.tree-container').getBoundingClientRect();
+  const viewerWidth = dimensions.width;
+  const viewerHeight = dimensions.height;
+  let tree = d3.layout.tree().size([viewerHeight, viewerWidth]);
+  const maxLabelLength = getMaxLabelLength(treeData);
+  root.x0 = viewerHeight / 2;
+  root.y0 = 0;
+  const zoomListener = d3.behavior
+    .zoom()
+    .scaleExtent([0.5, 3])
+    .on('zoom', () => {
+      svgGroup.attr(
+        'transform',
+        'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')'
+      );
+    });
+  const baseSvg = d3
+    .select('.tree-container')
+    .append('svg')
+    .attr('width', viewerWidth)
+    .attr('height', viewerHeight)
+    .attr('class', 'overlay touch')
+    .call(zoomListener);
+
+  baseSvg
+    .on('touchstart.zoom', null)
+    .on('touchmove.zoom', null)
+    .on('dblclick.zoom', null)
+    .on('touchend.zoom', null);
+  const svgGroup = baseSvg.append('g');
+  return {
+    root: root,
+    tree: tree,
+    viewerWidth,
+    viewerHeight,
+    maxLabelLength,
+    svgGroup,
+    zoomListener,
+    teamsColorMap,
+  };
+};
+function fromStringToColor(str = '') {
+  if (!str) return 'FFFFFF';
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  var c = (hash & 0x00ffffff).toString(16).toUpperCase();
+  return '00000'.substring(0, 6 - c.length) + c;
+}
+
+const sortByTeamsTree = d3Tree =>
+  d3Tree.sort((a, b) => (b['Team (team)'].toLowerCase() < a['Team (team)'].toLowerCase() ? 1 : -1));
+
+const drawGraph = ({
+  root,
+  tree,
+  viewerWidth,
+  viewerHeight,
+  maxLabelLength,
+  svgGroup,
+  zoomListener,
+  teamsColorMap,
+}) => {
+  sortByTeamsTree(tree);
+  update(
+    root,
+    root,
+    tree,
+    viewerWidth,
+    viewerHeight,
+    maxLabelLength,
+    svgGroup,
+    zoomListener,
+    teamsColorMap
+  );
+  centerNode(root, zoomListener, viewerWidth, viewerHeight);
+};
+
+function registerUserActions({
+  root,
+  tree,
+  viewerWidth,
+  viewerHeight,
+  maxLabelLength,
+  svgGroup,
+  zoomListener,
+  teamsColorMap,
+}) {
+  document.querySelector('#collapse-button').addEventListener('click', () => {
+    collapse(root);
+    update(
+      root,
+      root,
+      tree,
+      viewerWidth,
+      viewerHeight,
+      maxLabelLength,
+      svgGroup,
+      zoomListener,
+      teamsColorMap
+    );
+    centerNode(root, zoomListener, viewerWidth, viewerHeight);
+  });
+  document.querySelector('#expande-button').addEventListener('click', () => {
+    expand(root);
+    update(
+      root,
+      root,
+      tree,
+      viewerWidth,
+      viewerHeight,
+      maxLabelLength,
+      svgGroup,
+      zoomListener,
+      teamsColorMap
+    );
+    centerNode(root, zoomListener, viewerWidth, viewerHeight);
+  });
+}
 
 export default {
-  sortByNamesTree: d3Tree => d3Tree.sort((a, b) => (b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1)),
+  sortByNamesTree: d3Tree =>
+    d3Tree.sort((a, b) => (b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1)),
+  sortByTeamsTree,
   fromCSVUrlToJSON: async url => {
     const resp = await fetch(url);
     const CSVString = await resp.text();
     return await csvtojson().fromString(CSVString);
+  },
+  fromCSVStringToJSON: async string => {
+    return await csvtojson().fromString(string);
   },
   fromFlatMemebersToTree: oldlist => {
     const list = oldlist.slice().map(el => ({ ...el, name: el['Name (id)'] }));
@@ -253,7 +446,7 @@ export default {
       }
     }
     return {
-      name: 'root',
+      name: 'HBC Tech',
       children: roots.filter(el => el.children.length),
     };
   },
@@ -267,18 +460,23 @@ export default {
     }
     return node;
   },
-  getMaxLabelLength: treeData => {
-    let maxLabelLength = 0;
+  getTeamsMap: tree => {
+    const teams = new Map();
     visit(
-      treeData,
-      node => (maxLabelLength = Math.max(node.name.length, maxLabelLength)),
-      node => (node.children && node.children.length > 0 ? node.children : null)
+      tree,
+      node => teams.set(node['Team (team)'] || '', fromStringToColor(node['Team (team)'])),
+      node => node.children
     );
-    return maxLabelLength;
+    return teams;
   },
   centerNode,
   collapse,
+  drawGraph,
   expand,
-  visit,
+  expandParents,
+  getDrawParams,
+  getMaxLabelLength,
+  registerUserActions,
   update,
+  visit,
 };

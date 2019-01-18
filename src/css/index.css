@@ -1,0 +1,69 @@
+/* general */
+html,
+body {
+  position: fixed;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.grabbale {
+  cursor: grab;
+}
+.grabbale:active {
+  cursor: grabbing;
+}
+
+/* d3 */
+
+/* FORM */
+select {
+  height: 100% !important;
+}
+.no-margin {
+  margin: 0px;
+}
+.action-btn {
+  margin-right: 10px;
+}
+
+.action-btn,
+.select2-selection {
+  height: 35px !important;
+  padding: 10px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between;
+}
+
+.select2-selection__rendered {
+  padding: 0px !important;
+  line-height: unset !important;
+}
+
+.select2-selection__arrow {
+  position: relative !important;
+}
+
+.select2-container input {
+  font-size: large !important;
+}
+
+/* preview */
+.buttons-container {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+.touch {
+  touch-action: manipulation;
+}
+
+.tree-container {
+  flex: 1;
+}
