@@ -1,5 +1,4 @@
 // TODO: refactor this frankenstein, maybe move to new version of d3
-import csvtojson from 'csvtojson';
 import d3 from 'd3';
 var duration = 300;
 var i = 0;
@@ -12,15 +11,7 @@ const visit = (parent, visitFn, childrenFn) => {
   var count = children.length;
   for (var i = 0; i < count; i++) visit(children[i], visitFn, childrenFn);
 };
-const getTeamsColorMap = tree => {
-  const teams = new Map();
-  visit(
-    tree,
-    node => teams.set(node['Team (team)'] || '', fromStringToColor(node['Team (team)'])),
-    node => node.children
-  );
-  return teams;
-};
+
 const collapse = node => {
   if (!(node.children || node._children)) return;
   node._children = node.children || node._children;
@@ -166,7 +157,7 @@ function update(
     .attr('class', 'nodeCircle')
     .attr('r', 0)
     .style('fill', function(d) {
-      const color = teamsColorMap.get(d['Team (team)'] || '');
+      const color = teamsColorMap.get(d.team || '');
       return color; //return d._children ? 'lightsteelblue' : '#fff';
     });
 
@@ -245,11 +236,11 @@ function update(
     .attr('d', function(d) {
       var o = {
         x: source.x0,
-        y: source.y0,
+        y: source.y0
       };
       return diagonal({
         source: o,
-        target: o,
+        target: o
       });
     });
 
@@ -267,11 +258,11 @@ function update(
     .attr('d', function(d) {
       var o = {
         x: source.x,
-        y: source.y,
+        y: source.y
       };
       return diagonal({
         source: o,
-        target: o,
+        target: o
       });
     })
     .remove();
@@ -281,68 +272,6 @@ function update(
     d.x0 = d.x;
     d.y0 = d.y;
   });
-}
-const getMaxLabelLength = treeData => {
-  let maxLabelLength = 0;
-  visit(
-    treeData,
-    node => (maxLabelLength = Math.max(node.name.length, maxLabelLength)),
-    node => (node.children && node.children.length > 0 ? node.children : null)
-  );
-  return maxLabelLength;
-};
-const getDrawParams = treeData => {
-  const root = treeData;
-  const teamsColorMap = getTeamsColorMap(treeData);
-  const dimensions = document.querySelector('.tree-container').getBoundingClientRect();
-  const viewerWidth = dimensions.width;
-  const viewerHeight = dimensions.height;
-  let tree = d3.layout.tree().size([viewerHeight, viewerWidth]);
-  const maxLabelLength = getMaxLabelLength(treeData);
-  root.x0 = viewerHeight / 2;
-  root.y0 = 0;
-  const zoomListener = d3.behavior
-    .zoom()
-    .scaleExtent([0.5, 3])
-    .on('zoom', () => {
-      svgGroup.attr(
-        'transform',
-        'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')'
-      );
-    });
-  const baseSvg = d3
-    .select('.tree-container')
-    .append('svg')
-    .attr('width', viewerWidth)
-    .attr('height', viewerHeight)
-    .attr('class', 'overlay touch')
-    .call(zoomListener);
-
-  baseSvg
-    .on('touchstart.zoom', null)
-    .on('touchmove.zoom', null)
-    .on('dblclick.zoom', null)
-    .on('touchend.zoom', null);
-  const svgGroup = baseSvg.append('g');
-  return {
-    root: root,
-    tree: tree,
-    viewerWidth,
-    viewerHeight,
-    maxLabelLength,
-    svgGroup,
-    zoomListener,
-    teamsColorMap,
-  };
-};
-function fromStringToColor(str = '') {
-  if (!str) return 'FFFFFF';
-  var hash = 0;
-  for (var i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  var c = (hash & 0x00ffffff).toString(16).toUpperCase();
-  return '00000'.substring(0, 6 - c.length) + c;
 }
 
 const sortByTeamsTree = d3Tree =>
@@ -356,7 +285,7 @@ const drawGraph = ({
   maxLabelLength,
   svgGroup,
   zoomListener,
-  teamsColorMap,
+  teamsColorMap
 }) => {
   sortByTeamsTree(tree);
   update(
@@ -381,7 +310,7 @@ function registerUserActions({
   maxLabelLength,
   svgGroup,
   zoomListener,
-  teamsColorMap,
+  teamsColorMap
 }) {
   document.querySelector('#collapse-button').addEventListener('click', () => {
     collapse(root);
@@ -418,7 +347,10 @@ function registerUserActions({
 export default {
   sortByNamesTree: d3Tree =>
     d3Tree.sort((a, b) => (b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1)),
-  sortByTeamsTree,
+  sortByTeamsTree: d3Tree =>
+    d3Tree.sort((a, b) =>
+      b['Team (team)'].toLowerCase() < a['Team (team)'].toLowerCase() ? 1 : -1
+    ),
   fromCSVUrlToJSON: async url => {
     const resp = await fetch(url);
     const CSVString = await resp.text();
@@ -447,7 +379,7 @@ export default {
     }
     return {
       name: 'HBC Tech',
-      children: roots.filter(el => el.children.length),
+      children: roots.filter(el => el.children.length)
     };
   },
   toggleChildren: node => {
@@ -460,23 +392,12 @@ export default {
     }
     return node;
   },
-  getTeamsMap: tree => {
-    const teams = new Map();
-    visit(
-      tree,
-      node => teams.set(node['Team (team)'] || '', fromStringToColor(node['Team (team)'])),
-      node => node.children
-    );
-    return teams;
-  },
   centerNode,
   collapse,
   drawGraph,
   expand,
   expandParents,
-  getDrawParams,
-  getMaxLabelLength,
   registerUserActions,
   update,
-  visit,
+  visit
 };

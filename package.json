@@ -4,22 +4,31 @@
   "description": "Simple Parcel Sandbox",
   "main": "index.html",
   "scripts": {
-    "start": "parcel index.html --open",
-    "build": "parcel build index.html"
+    "start": "node index.js",
+    "build": "parcel build index.html",
+    "postinstall": "parcel build index.html"
   },
   "dependencies": {
     "@octokit/rest": "^16.10.0",
+    "basic-auth": "^2.0.1",
     "bulma": "0.7.2",
+    "compression": "^1.7.3",
     "csvtojson": "2.0.8",
     "d3": "^3.5.17",
+    "dotenv": "6.2.0",
+    "ejs": "^2.5.6",
+    "express-basic-auth": "^1.1.5",
+    "express": "^4.15.2",
     "jquery": "3.3.1",
     "ramda": "0.26.1",
     "select2": "^4.0.5"
   },
   "devDependencies": {
     "@babel/core": "7.2.0",
+    "@types/d3": "^3.5.17",
     "parcel-bundler": "^1.6.1",
-    "@types/d3": "^3.5.17"
+    "request": "^2.81.0",
+    "tape": "^4.7.0"
   },
   "browserslist": [
     "since 2017-06"

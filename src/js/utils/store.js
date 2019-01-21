@@ -1,4 +1,3 @@
-// List of object needed pretty much everywhere
 const Store = {
   drawParameters: {
     root: undefined,
@@ -8,8 +7,8 @@ const Store = {
     maxLabelLength: undefined,
     svgGroup: undefined,
     zoomListener: undefined,
-    teamsColorMap: new Map(),
-  },
+    teamsColorMap: undefined
+  }
 };
 
 export default Store;

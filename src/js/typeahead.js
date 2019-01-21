@@ -1,42 +1,34 @@
 import $ from 'jquery';
 import select2 from 'select2';
-import Utils from './utils';
-import Store from './store';
+import UtilsTree from './utils/tree';
 select2($);
 
 export default {
-  init(selector, root) {
+  init(
+    selector,
+    { root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener, teamsColorMap }
+  ) {
     const treeList = [];
-    Utils.visit(root, d => treeList.push(d), d => d._children || d.children);
+    UtilsTree.visit(root, d => treeList.push(d), d => d._children || d.children);
     const html = treeList
       .map(item => `<option value="${item.name}">${item.name}</option>`)
       .join('');
     document.querySelector(selector).innerHTML = html;
 
     // Init Select 2
-    $('.select-input').select2();
+    $(selector).select2();
 
     // On Select Open Tree
-    $('.select-input').on('select2:select', function(e) {
-      const {
-        root,
-        tree,
-        viewerWidth,
-        viewerHeight,
-        maxLabelLength,
-        svgGroup,
-        zoomListener,
-        teamsColorMap,
-      } = Store.drawParameters;
+    $(selector).on('select2:select', function(e) {
       let node;
-      Utils.collapse(root);
-      Utils.visit(
+      UtilsTree.collapse(root);
+      UtilsTree.visit(
         root,
         d => (d.name === e.params.data.id ? (node = d) : (node = node)),
         d => d._children
       );
-      Utils.expandParents(node);
-      Utils.update(
+      UtilsTree.expandParents(node);
+      UtilsTree.update(
         root,
         root,
         tree,
@@ -47,7 +39,7 @@ export default {
         zoomListener,
         teamsColorMap
       );
-      Utils.centerNode(node, zoomListener, viewerWidth, viewerHeight);
+      UtilsTree.centerNode(node, zoomListener, viewerWidth, viewerHeight);
     });
-  },
+  }
 };
