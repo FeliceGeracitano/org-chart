@@ -78,11 +78,7 @@ const getMaxLabelLength = treeData => {
 };
 const getTeamsColorMap = tree => {
   const teams = new Map();
-  UtilsTree.visit(
-    tree,
-    node => teams.set(node.team || '', fromStringToColor(node.team)),
-    node => node.children
-  );
+  UtilsTree.visit(tree, node => teams.set(node.team || '', fromStringToColor(node.team)), node => node.children);
   return teams;
 };
 const setDrawParameters = (treeData, selector) => {
@@ -99,10 +95,7 @@ const setDrawParameters = (treeData, selector) => {
     .zoom()
     .scaleExtent([0.5, 3])
     .on('zoom', () => {
-      svgGroup.attr(
-        'transform',
-        'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')'
-      );
+      svgGroup.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
     });
   const baseSvg = d3
     .select(selector)
@@ -128,7 +121,13 @@ const setDrawParameters = (treeData, selector) => {
     teamsColorMap
   };
 };
+const getTeams = tree => {
+  const teams = new Set();
+  UtilsTree.visit(tree, node => node.team && teams.add(node.team), node => node.children);
+  return Array.from(teams);
+};
 export default {
+  getTeams,
   fetchMembers,
   setDrawParameters,
   getDrawParameters

@@ -1,5 +1,6 @@
 // TODO: refactor this frankenstein, maybe move to new version of d3
 import d3 from 'd3';
+import UtilsData from './data';
 var duration = 300;
 var i = 0;
 
@@ -31,7 +32,8 @@ const expandParents = node => {
   expandParents(parent);
 };
 
-function centerNode(source, zoomListener, viewerWidth, viewerHeight) {
+function centerNode(source) {
+  let { viewerWidth, viewerHeight, zoomListener } = UtilsData.getDrawParameters();
   const scale = zoomListener.scale();
   let x = -source.y0;
   let y = -source.x0;
@@ -56,45 +58,25 @@ const toggleChildren = node => {
   return node;
 };
 
-function click(
-  node,
-  root,
-  tree,
-  viewerWidth,
-  viewerHeight,
-  maxLabelLength,
-  svgGroup,
-  zoomListener,
-  teamsColorMap
-) {
+function click(node, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener, teamsColorMap) {
   if (d3.event.defaultPrevented) return;
   if (node._children || node.children) {
     node = toggleChildren(node);
-    update(
-      node,
-      root,
-      tree,
-      viewerWidth,
-      viewerHeight,
-      maxLabelLength,
-      svgGroup,
-      zoomListener,
-      teamsColorMap
-    );
+    update(node, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener, teamsColorMap);
   }
-  centerNode(node, zoomListener, viewerWidth, viewerHeight);
+  centerNode(node);
 }
-function update(
-  source,
-  root,
-  tree,
-  viewerWidth,
-  viewerHeight,
-  maxLabelLength,
-  svgGroup,
-  zoomListener,
-  teamsColorMap
-) {
+function update(source) {
+  let {
+    root,
+    tree,
+    viewerWidth,
+    viewerHeight,
+    maxLabelLength,
+    svgGroup,
+    zoomListener,
+    teamsColorMap
+  } = UtilsData.getDrawParameters();
   const diagonal = d3.svg.diagonal().projection(d => [d.y, d.x]);
 
   // Compute the new height, function counts total children of root node and sets tree height accordingly.
@@ -139,17 +121,7 @@ function update(
     .attr('class', 'node')
     .attr('transform', () => 'translate(' + source.y0 + ',' + source.x0 + ')')
     .on('click', d => {
-      click(
-        d,
-        root,
-        tree,
-        viewerWidth,
-        viewerHeight,
-        maxLabelLength,
-        svgGroup,
-        zoomListener,
-        teamsColorMap
-      );
+      click(d, root, tree, viewerWidth, viewerHeight, maxLabelLength, svgGroup, zoomListener, teamsColorMap);
     });
 
   nodeEnter
@@ -277,80 +249,29 @@ function update(
 const sortByTeamsTree = d3Tree =>
   d3Tree.sort((a, b) => (b['Team (team)'].toLowerCase() < a['Team (team)'].toLowerCase() ? 1 : -1));
 
-const drawGraph = ({
-  root,
-  tree,
-  viewerWidth,
-  viewerHeight,
-  maxLabelLength,
-  svgGroup,
-  zoomListener,
-  teamsColorMap
-}) => {
+const drawGraph = ({ root, tree }) => {
   sortByTeamsTree(tree);
-  update(
-    root,
-    root,
-    tree,
-    viewerWidth,
-    viewerHeight,
-    maxLabelLength,
-    svgGroup,
-    zoomListener,
-    teamsColorMap
-  );
-  centerNode(root, zoomListener, viewerWidth, viewerHeight);
+  update(root);
+  centerNode(root);
 };
 
-function registerUserActions({
-  root,
-  tree,
-  viewerWidth,
-  viewerHeight,
-  maxLabelLength,
-  svgGroup,
-  zoomListener,
-  teamsColorMap
-}) {
+function registerUserActions({ root }) {
   document.querySelector('#collapse-button').addEventListener('click', () => {
     collapse(root);
-    update(
-      root,
-      root,
-      tree,
-      viewerWidth,
-      viewerHeight,
-      maxLabelLength,
-      svgGroup,
-      zoomListener,
-      teamsColorMap
-    );
-    centerNode(root, zoomListener, viewerWidth, viewerHeight);
+    update(root);
+    centerNode(root);
   });
   document.querySelector('#expande-button').addEventListener('click', () => {
     expand(root);
-    update(
-      root,
-      root,
-      tree,
-      viewerWidth,
-      viewerHeight,
-      maxLabelLength,
-      svgGroup,
-      zoomListener,
-      teamsColorMap
-    );
-    centerNode(root, zoomListener, viewerWidth, viewerHeight);
+    update(root);
+    centerNode(root);
   });
 }
 
 export default {
-  sortByNamesTree: d3Tree =>
-    d3Tree.sort((a, b) => (b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1)),
+  sortByNamesTree: d3Tree => d3Tree.sort((a, b) => (b.name.toLowerCase() < a.name.toLowerCase() ? 1 : -1)),
   sortByTeamsTree: d3Tree =>
-    d3Tree.sort((a, b) =>
-      b['Team (team)'].toLowerCase() < a['Team (team)'].toLowerCase() ? 1 : -1
-    ),
+    d3Tree.sort((a, b) => (b['Team (team)'].toLowerCase() < a['Team (team)'].toLowerCase() ? 1 : -1)),
   fromCSVUrlToJSON: async url => {
     const resp = await fetch(url);
     const CSVString = await resp.text();

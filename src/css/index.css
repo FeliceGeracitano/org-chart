@@ -26,9 +26,6 @@ select {
 .no-margin {
   margin: 0px;
 }
-.action-btn {
-  margin-right: 10px;
-}
 
 .action-btn,
 .select2-selection {
@@ -54,12 +51,17 @@ select {
 }
 
 /* preview */
-.buttons-container {
+.toolbar {
   height: 60px;
   display: flex;
   align-items: center;
   padding-left: 10px;
 }
+
+.toolbar > * {
+  margin-right: 10px;
+}
+
 .touch {
   touch-action: manipulation;
 }

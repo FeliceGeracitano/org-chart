@@ -4,8 +4,8 @@ import membersurl from '../../mock/members.csv';
 import '../css/d3.css';
 import '../css/index.css';
 import typeahead from './typeahead';
-import UtilsTree from './utils/tree';
 import UtilsData from './utils/data';
+import UtilsTree from './utils/tree';
 
 const init = async () => {
   const membersTree = await UtilsData.fetchMembers(
@@ -19,7 +19,8 @@ const init = async () => {
   UtilsData.setDrawParameters(membersTree, '.tree-container');
   UtilsTree.drawGraph(UtilsData.getDrawParameters());
   UtilsTree.registerUserActions(UtilsData.getDrawParameters());
-  typeahead.init('.select-input', UtilsData.getDrawParameters());
+  typeahead.initMemberSelector('#select-input-member', UtilsData.getDrawParameters());
+  typeahead.initTeamSelector('#select-input-team', UtilsData.getDrawParameters());
 };
 
 init();

@@ -5,6 +5,7 @@
   "main": "index.html",
   "scripts": {
     "start": "node index.js",
+    "start:dev": "parcel index.html --open",
     "build": "parcel build index.html",
     "postinstall": "parcel build index.html"
   },
