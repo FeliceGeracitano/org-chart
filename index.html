@@ -4,12 +4,13 @@
   </head>
   <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
   <body>
-    <div class="toolbar">
-      <a id="expande-button" class="button no-margin is-link action-btn toolbal__item">Expade All</a>
-      <a id="collapse-button" class="button no-margin is-link action-btn">Collapse All</a>
-      <select id="select-input-member" name="member"></select>
-      <select id="select-input-team" name="team"></select>
+    <div class="toolbar hidden">
+      <a id="expande-button" class="button is-link action-btn hide">Expade All</a>
+      <a id="collapse-button" class="button is-link action-btn hide">Collapse All</a>
+      <select id="select-input-member" name="member" class="hide"></select>
+      <select id="select-input-team" name="team" class="hide"></select>
     </div>
+    <div class="toolbar"><div class="test skeleton-box" name="team"></div></div>
     <div class="tree-container grabbale"></div>
   </body>
   <script src="src/js/index.js"></script>

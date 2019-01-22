@@ -35,5 +35,11 @@ export default {
       UtilsTree.update(root);
       UtilsTree.centerNode(firstMember);
     });
+  },
+  showControls() {
+    const hidden = document.querySelector('.toolbar.hidden');
+    const showed = document.querySelector('.toolbar:not(.hidden)');
+    hidden.classList.remove('hidden');
+    showed.classList.add('hidden');
   }
 };

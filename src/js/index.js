@@ -21,6 +21,7 @@ const init = async () => {
   UtilsTree.registerUserActions(UtilsData.getDrawParameters());
   typeahead.initMemberSelector('#select-input-member', UtilsData.getDrawParameters());
   typeahead.initTeamSelector('#select-input-team', UtilsData.getDrawParameters());
+  typeahead.showControls();
 };
 
 init();
